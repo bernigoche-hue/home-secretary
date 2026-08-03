@@ -1,15 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-    <title>Home Secretary</title>
-</head>
-<body>
-    <h1>Home Secretary</h1>
-    <p>Family coordination made simpler.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Home Secretary{% endblock %}
+
+{% block content %}
+
+<section class="bg-white p-5 rounded-4 shadow-sm">
+
+    <div class="row align-items-center">
+
+        <div class="col-lg-7">
+
+            <p class="text-primary fw-semibold mb-2">
+                FAMILY COORDINATION PLATFORM
+            </p>
+
+            <h1 class="display-5 fw-bold mb-3">
+                Keep your family organised in one shared space.
+            </h1>
+
+            <p class="lead text-secondary mb-4">
+                Plan events, assign household tasks and keep everyone
+                informed through a shared family dashboard.
+            </p>
+
+            {% if current_user.is_authenticated %}
+
+                <a
+                    class="btn btn-primary btn-lg"
+                    href="{{ url_for('main.dashboard') }}"
+                >
+                    Open dashboard
+                </a>
+
+            {% else %}
+
+                <a
+                    class="btn btn-primary btn-lg me-2"
+                    href="{{ url_for('main.register') }}"
+                >
+                    Create account
+                </a>
+
+                <a
+                    class="btn btn-outline-primary btn-lg"
+                    href="{{ url_for('main.login') }}"
+                >
+                    Log in
+                </a>
+
+            {% endif %}
+
+        </div>
+
+        <div class="col-lg-5 mt-4 mt-lg-0">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <h2 class="h5 mb-3">
+                        Prototype features
+                    </h2>
+
+                    <ul class="mb-0">
+                        <li class="mb-2">Secure user accounts</li>
+                        <li class="mb-2">Family group management</li>
+                        <li class="mb-2">Shared family events</li>
+                        <li>Household task tracking</li>
+                    </ul>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Home Secretary{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="text-primary fw-semibold mb-1">
+            FAMILY DASHBOARD
+        </p>
+
+        <h1 class="h2 mb-1">
+            Welcome, {{ current_user.full_name }}
+        </h1>
+
+        <p class="text-secondary mb-0">
+            Your shared events and household tasks will appear here.
+        </p>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-secondary mb-2">
+                    Upcoming events
+                </p>
+
+                <p class="display-6 fw-semibold mb-0">
+                    0
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-secondary mb-2">
+                    Outstanding tasks
+                </p>
+
+                <p class="display-6 fw-semibold mb-0">
+                    0
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-secondary mb-2">
+                    Family group
+                </p>
+
+                <p class="h5 mb-0">
+                    {% if current_user.family_group %}
+                        {{ current_user.family_group.name }}
+                    {% else %}
+                        Not yet created
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body p-4">
+        <h2 class="h4">
+            Next step
+        </h2>
+
+        <p class="text-secondary mb-0">
+            Create or join a family group to begin sharing events
+            and household tasks.
+        </p>
+    </div>
+</div>
+
+{% endblock %}
