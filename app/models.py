@@ -33,6 +33,13 @@ class FamilyGroup(db.Model):
         lazy=True,
     )
 
+    tasks = db.relationship(
+        "Task",
+        back_populates="family_group",
+        cascade="all, delete-orphan",
+        lazy=True,
+    )
+
     def __repr__(self) -> str:
         return f"<FamilyGroup {self.name}>"
 
@@ -76,12 +83,24 @@ class User(UserMixin, db.Model):
         lazy=True,
     )
 
+    created_tasks = db.relationship(
+        "Task",
+        back_populates="creator",
+        foreign_keys="Task.created_by_id",
+        lazy=True,
+    )
+
+    assigned_tasks = db.relationship(
+        "Task",
+        back_populates="assignee",
+        foreign_keys="Task.assigned_to_id",
+        lazy=True,
+    )
+
     def set_password(self, password: str) -> None:
-        """Store a secure password hash."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password: str) -> bool:
-        """Check a supplied password against the stored hash."""
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self) -> str:
@@ -94,38 +113,16 @@ class Event(db.Model):
     __tablename__ = "events"
 
     id = db.Column(db.Integer, primary_key=True)
-
-    title = db.Column(
-        db.String(150),
-        nullable=False,
-    )
-
-    description = db.Column(
-        db.Text,
-        nullable=True,
-    )
-
-    event_date = db.Column(
-        db.Date,
-        nullable=False,
-    )
-
-    start_time = db.Column(
-        db.Time,
-        nullable=False,
-    )
-
-    location = db.Column(
-        db.String(200),
-        nullable=True,
-    )
-
+    title = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    event_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    location = db.Column(db.String(200), nullable=True)
     status = db.Column(
         db.String(20),
         nullable=False,
         default="scheduled",
     )
-
     created_at = db.Column(
         db.DateTime,
         nullable=False,
@@ -159,10 +156,80 @@ class Event(db.Model):
         return f"<Event {self.title}>"
 
 
+class Task(db.Model):
+    """A household task assigned within a family group."""
+
+    __tablename__ = "tasks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    due_date = db.Column(db.Date, nullable=False)
+
+    priority = db.Column(
+        db.String(20),
+        nullable=False,
+        default="medium",
+    )
+
+    status = db.Column(
+        db.String(20),
+        nullable=False,
+        default="pending",
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    completed_at = db.Column(
+        db.DateTime,
+        nullable=True,
+    )
+
+    family_group_id = db.Column(
+        db.Integer,
+        db.ForeignKey("family_groups.id"),
+        nullable=False,
+    )
+
+    created_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False,
+    )
+
+    assigned_to_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False,
+    )
+
+    family_group = db.relationship(
+        "FamilyGroup",
+        back_populates="tasks",
+    )
+
+    creator = db.relationship(
+        "User",
+        back_populates="created_tasks",
+        foreign_keys=[created_by_id],
+    )
+
+    assignee = db.relationship(
+        "User",
+        back_populates="assigned_tasks",
+        foreign_keys=[assigned_to_id],
+    )
+
+    def __repr__(self) -> str:
+        return f"<Task {self.title}>"
+
 
 @login_manager.user_loader
 def load_user(user_id: str):
-    """Reload an authenticated user from the session."""
     try:
         return db.session.get(User, int(user_id))
     except (TypeError, ValueError):

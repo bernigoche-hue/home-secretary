@@ -3,6 +3,7 @@ from wtforms import (
     BooleanField,
     DateField,
     PasswordField,
+    SelectField,
     StringField,
     SubmitField,
     TextAreaField,
@@ -12,18 +13,14 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
 
 class RegistrationForm(FlaskForm):
-    """Form used to create a new user account."""
-
     full_name = StringField(
         "Full name",
         validators=[DataRequired(), Length(min=2, max=120)],
     )
-
     email = StringField(
         "Email address",
         validators=[DataRequired(), Email(), Length(max=120)],
     )
-
     password = PasswordField(
         "Password",
         validators=[
@@ -34,7 +31,6 @@ class RegistrationForm(FlaskForm):
             ),
         ],
     )
-
     confirm_password = PasswordField(
         "Confirm password",
         validators=[
@@ -42,72 +38,70 @@ class RegistrationForm(FlaskForm):
             EqualTo("password", message="The passwords must match."),
         ],
     )
-
     submit = SubmitField("Create account")
 
 
 class LoginForm(FlaskForm):
-    """Form used to authenticate an existing user."""
-
     email = StringField(
         "Email address",
         validators=[DataRequired(), Email()],
     )
-
     password = PasswordField(
         "Password",
         validators=[DataRequired()],
     )
-
     remember_me = BooleanField("Remember me")
     submit = SubmitField("Log in")
 
 
 class CreateFamilyGroupForm(FlaskForm):
-    """Form used to create a new family group."""
-
     name = StringField(
         "Family group name",
         validators=[DataRequired(), Length(min=2, max=100)],
     )
-
     submit = SubmitField("Create family group")
 
 
 class JoinFamilyGroupForm(FlaskForm):
-    """Form used to join an existing family group."""
-
     invite_code = StringField(
         "Invitation code",
         validators=[DataRequired(), Length(min=6, max=20)],
     )
-
     submit = SubmitField("Join family group")
 
 
 class EventForm(FlaskForm):
-    """Form used to create a family event."""
-
     title = StringField(
         "Event title",
         validators=[DataRequired(), Length(min=2, max=150)],
     )
-
     event_date = DateField(
         "Date",
         validators=[DataRequired()],
         format="%Y-%m-%d",
     )
-
     start_time = TimeField(
         "Start time",
         validators=[DataRequired()],
         format="%H:%M",
     )
-
     location = StringField(
         "Location",
         validators=[Optional(), Length(max=200)],
+    )
+    description = TextAreaField(
+        "Description",
+        validators=[Optional(), Length(max=1000)],
+    )
+    submit = SubmitField("Create event")
+
+
+class TaskForm(FlaskForm):
+    """Form used to create a household task."""
+
+    title = StringField(
+        "Task title",
+        validators=[DataRequired(), Length(min=2, max=150)],
     )
 
     description = TextAreaField(
@@ -115,4 +109,26 @@ class EventForm(FlaskForm):
         validators=[Optional(), Length(max=1000)],
     )
 
-    submit = SubmitField("Create event")
+    due_date = DateField(
+        "Due date",
+        validators=[DataRequired()],
+        format="%Y-%m-%d",
+    )
+
+    priority = SelectField(
+        "Priority",
+        choices=[
+            ("low", "Low"),
+            ("medium", "Medium"),
+            ("high", "High"),
+        ],
+        validators=[DataRequired()],
+    )
+
+    assigned_to = SelectField(
+        "Assign to",
+        coerce=int,
+        validators=[DataRequired()],
+    )
+
+    submit = SubmitField("Create task")

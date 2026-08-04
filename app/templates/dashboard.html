@@ -25,6 +25,8 @@
             <div class="card-body">
                 <p class="text-secondary mb-2">Upcoming events</p>
                 <p class="display-6 fw-semibold mb-0">
+    {{ outstanding_tasks|length }}
+</p>
                     {{ upcoming_events|length }}
                 </p>
             </div>
@@ -114,6 +116,19 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-4">
                     <h2 class="h4">Quick actions</h2>
+                    <a
+    class="btn btn-outline-primary"
+    href="{{ url_for('main.create_task') }}"
+>
+    Create task
+</a>
+
+<a
+    class="btn btn-outline-primary"
+    href="{{ url_for('main.tasks') }}"
+>
+    View tasks
+</a>
 
                     <div class="d-grid gap-2 mt-3">
                         <a

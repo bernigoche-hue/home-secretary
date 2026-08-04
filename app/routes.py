@@ -1,6 +1,6 @@
 import secrets
 import string
-from datetime import date
+from datetime import date, datetime
 
 from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -12,8 +12,9 @@ from app.forms import (
     JoinFamilyGroupForm,
     LoginForm,
     RegistrationForm,
+    TaskForm,
 )
-from app.models import Event, FamilyGroup, User
+from app.models import Event, FamilyGroup, Task, User
 
 
 main = Blueprint("main", __name__)
@@ -102,6 +103,7 @@ def login():
 @login_required
 def dashboard():
     upcoming_events = []
+    outstanding_tasks = []
 
     if current_user.family_group_id is not None:
         upcoming_events = (
@@ -116,9 +118,21 @@ def dashboard():
             .all()
         )
 
+        outstanding_tasks = (
+            Task.query
+            .filter(
+                Task.family_group_id == current_user.family_group_id,
+                Task.status != "completed",
+            )
+            .order_by(Task.due_date.asc())
+            .limit(5)
+            .all()
+        )
+
     return render_template(
         "dashboard.html",
         upcoming_events=upcoming_events,
+        outstanding_tasks=outstanding_tasks,
     )
 
 
@@ -271,7 +285,130 @@ def create_event():
 
     return render_template("create_event.html", form=form)
 
+@main.route("/tasks")
+@login_required
+def tasks():
+    """Display household tasks for the user's family group."""
+    if current_user.family_group_id is None:
+        flash(
+            "Create or join a family group before managing tasks.",
+            "warning",
+        )
+        return redirect(url_for("main.dashboard"))
 
+    family_tasks = (
+        Task.query
+        .filter_by(family_group_id=current_user.family_group_id)
+        .order_by(Task.status.asc(), Task.due_date.asc())
+        .all()
+    )
+
+    return render_template(
+        "tasks.html",
+        tasks=family_tasks,
+    )
+
+
+@main.route("/tasks/create", methods=["GET", "POST"])
+@login_required
+def create_task():
+    """Create and assign a household task."""
+    if current_user.family_group_id is None:
+        flash(
+            "Create or join a family group before creating tasks.",
+            "warning",
+        )
+        return redirect(url_for("main.dashboard"))
+
+    form = TaskForm()
+
+    family_members = (
+        User.query
+        .filter_by(family_group_id=current_user.family_group_id)
+        .order_by(User.full_name.asc())
+        .all()
+    )
+
+    form.assigned_to.choices = [
+        (member.id, member.full_name)
+        for member in family_members
+    ]
+
+    if form.validate_on_submit():
+        assignee = db.session.get(User, form.assigned_to.data)
+
+        if (
+            assignee is None
+            or assignee.family_group_id != current_user.family_group_id
+        ):
+            flash(
+                "The selected assignee is not a member of your family group.",
+                "danger",
+            )
+            return render_template("create_task.html", form=form)
+
+        task = Task(
+            title=form.title.data.strip(),
+            description=(
+                form.description.data.strip()
+                if form.description.data
+                else None
+            ),
+            due_date=form.due_date.data,
+            priority=form.priority.data,
+            status="pending",
+            family_group_id=current_user.family_group_id,
+            created_by_id=current_user.id,
+            assigned_to_id=assignee.id,
+        )
+
+        db.session.add(task)
+        db.session.commit()
+
+        flash(
+            f"{task.title} was created and assigned to "
+            f"{assignee.full_name}.",
+            "success",
+        )
+        return redirect(url_for("main.tasks"))
+
+    return render_template("create_task.html", form=form)
+
+
+@main.route("/tasks/<int:task_id>/status/<string:new_status>", methods=["POST"])
+@login_required
+def update_task_status(task_id: int, new_status: str):
+    """Update a task through its controlled status lifecycle."""
+    allowed_statuses = {"pending", "in_progress", "completed"}
+
+    if new_status not in allowed_statuses:
+        flash("The requested task status is invalid.", "danger")
+        return redirect(url_for("main.tasks"))
+
+    task = db.session.get(Task, task_id)
+
+    if (
+        task is None
+        or task.family_group_id != current_user.family_group_id
+    ):
+        flash("The task could not be found.", "danger")
+        return redirect(url_for("main.tasks"))
+
+    task.status = new_status
+
+    if new_status == "completed":
+        task.completed_at = datetime.utcnow()
+    else:
+        task.completed_at = None
+
+    db.session.commit()
+
+    flash(
+        f"{task.title} is now marked as "
+        f"{new_status.replace('_', ' ')}.",
+        "success",
+    )
+    return redirect(url_for("main.tasks"))
 @main.route("/logout")
 @login_required
 def logout():

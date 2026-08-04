@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Household Tasks | Home Secretary{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <p class="text-primary fw-semibold mb-1">
+            HOUSEHOLD TASKS
+        </p>
+
+        <h1 class="h2 mb-1">
+            {{ current_user.family_group.name }} responsibilities
+        </h1>
+
+        <p class="text-secondary mb-0">
+            Create, assign and track shared household work.
+        </p>
+    </div>
+
+    <a
+        class="btn btn-primary"
+        href="{{ url_for('main.create_task') }}"
+    >
+        Create task
+    </a>
+</div>
+
+{% if tasks %}
+    <div class="row g-4">
+        {% for task in tasks %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="badge
+                                {% if task.priority == 'high' %}
+                                    text-bg-danger
+                                {% elif task.priority == 'medium' %}
+                                    text-bg-warning
+                                {% else %}
+                                    text-bg-secondary
+                                {% endif %}
+                            ">
+                                {{ task.priority|title }}
+                            </span>
+
+                            <span class="badge
+                                {% if task.status == 'completed' %}
+                                    text-bg-success
+                                {% elif task.status == 'in_progress' %}
+                                    text-bg-primary
+                                {% else %}
+                                    text-bg-light
+                                {% endif %}
+                            ">
+                                {{ task.status.replace('_', ' ')|title }}
+                            </span>
+                        </div>
+
+                        <h2 class="h5">{{ task.title }}</h2>
+
+                        {% if task.description %}
+                            <p class="text-secondary">
+                                {{ task.description }}
+                            </p>
+                        {% endif %}
+
+                        <p class="mb-1">
+                            <strong>Assigned to:</strong>
+                            {{ task.assignee.full_name }}
+                        </p>
+
+                        <p class="mb-1">
+                            <strong>Due:</strong>
+                            {{ task.due_date.strftime("%d %B %Y") }}
+                        </p>
+
+                        <p class="small text-secondary mb-3">
+                            Created by {{ task.creator.full_name }}
+                        </p>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if task.status == "pending" %}
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'main.update_task_status',
+                                        task_id=task.id,
+                                        new_status='in_progress'
+                                    ) }}"
+                                >
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        Start task
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            {% if task.status != "completed" %}
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'main.update_task_status',
+                                        task_id=task.id,
+                                        new_status='completed'
+                                    ) }}"
+                                >
+                                    <button class="btn btn-sm btn-success">
+                                        Mark completed
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-5 text-center">
+            <h2 class="h4">No household tasks yet</h2>
+
+            <p class="text-secondary">
+                Create the first responsibility for your family.
+            </p>
+
+            <a
+                class="btn btn-primary"
+                href="{{ url_for('main.create_task') }}"
+            >
+                Create first task
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
