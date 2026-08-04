@@ -24,7 +24,9 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
                 <p class="text-secondary mb-2">Upcoming events</p>
-                <p class="display-6 fw-semibold mb-0">0</p>
+                <p class="display-6 fw-semibold mb-0">
+                    {{ upcoming_events|length }}
+                </p>
             </div>
         </div>
     </div>
@@ -60,28 +62,85 @@
     </div>
 </div>
 
-<div class="card border-0 shadow-sm mt-4">
-    <div class="card-body p-4">
-        {% if current_user.family_group %}
-            <h2 class="h4">Your family space is ready</h2>
+{% if current_user.family_group %}
+    <div class="row g-4 mt-1">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h2 class="h4 mb-0">Upcoming events</h2>
 
-            <p class="text-secondary">
-                View household members and share the invitation code
-                with another family member.
-            </p>
+                        <a href="{{ url_for('main.events') }}">
+                            View all
+                        </a>
+                    </div>
 
-            <a
-                class="btn btn-primary"
-                href="{{ url_for('main.family') }}"
-            >
-                View family group
-            </a>
-        {% else %}
+                    {% if upcoming_events %}
+                        <div class="list-group list-group-flush">
+                            {% for event in upcoming_events %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <p class="fw-semibold mb-1">
+                                                {{ event.title }}
+                                            </p>
+
+                                            <small class="text-secondary">
+                                                {{ event.event_date.strftime("%d %B %Y") }}
+                                                at
+                                                {{ event.start_time.strftime("%H:%M") }}
+                                            </small>
+                                        </div>
+
+                                        {% if event.location %}
+                                            <small class="text-secondary">
+                                                {{ event.location }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-secondary">
+                            No upcoming events have been created.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h2 class="h4">Quick actions</h2>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <a
+                            class="btn btn-primary"
+                            href="{{ url_for('main.create_event') }}"
+                        >
+                            Create event
+                        </a>
+
+                        <a
+                            class="btn btn-outline-primary"
+                            href="{{ url_for('main.family') }}"
+                        >
+                            View family group
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body p-4">
             <h2 class="h4">Set up your family group</h2>
 
             <p class="text-secondary">
-                Create a household group or join one using an
-                invitation code.
+                Create a household group or join one using an invitation code.
             </p>
 
             <a
@@ -97,7 +156,7 @@
             >
                 Join family group
             </a>
-        {% endif %}
+        </div>
     </div>
-</div>
+{% endif %}
 {% endblock %}

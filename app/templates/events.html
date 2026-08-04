@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Family Events | Home Secretary{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <p class="text-primary fw-semibold mb-1">
+            FAMILY EVENTS
+        </p>
+
+        <h1 class="h2 mb-1">
+            {{ current_user.family_group.name }} schedule
+        </h1>
+
+        <p class="text-secondary mb-0">
+            Shared events are visible to every member of the family group.
+        </p>
+    </div>
+
+    <a
+        class="btn btn-primary"
+        href="{{ url_for('main.create_event') }}"
+    >
+        Create event
+    </a>
+</div>
+
+{% if events %}
+    <div class="row g-4">
+        {% for event in events %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+
+                        <span class="badge text-bg-primary mb-3">
+                            {{ event.status|title }}
+                        </span>
+
+                        <h2 class="h5 mb-2">
+                            {{ event.title }}
+                        </h2>
+
+                        <p class="text-secondary mb-2">
+                            <strong>Date:</strong>
+                            {{ event.event_date.strftime("%d %B %Y") }}
+                        </p>
+
+                        <p class="text-secondary mb-2">
+                            <strong>Time:</strong>
+                            {{ event.start_time.strftime("%H:%M") }}
+                        </p>
+
+                        {% if event.location %}
+                            <p class="text-secondary mb-2">
+                                <strong>Location:</strong>
+                                {{ event.location }}
+                            </p>
+                        {% endif %}
+
+                        {% if event.description %}
+                            <p class="mb-3">
+                                {{ event.description }}
+                            </p>
+                        {% endif %}
+
+                        <small class="text-secondary">
+                            Created by {{ event.creator.full_name }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-5 text-center">
+            <h2 class="h4">No family events yet</h2>
+
+            <p class="text-secondary">
+                Create the first shared event for your household.
+            </p>
+
+            <a
+                class="btn btn-primary"
+                href="{{ url_for('main.create_event') }}"
+            >
+                Create first event
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

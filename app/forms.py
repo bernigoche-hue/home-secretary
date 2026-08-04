@@ -1,6 +1,14 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, PasswordField, StringField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo, Length
+from wtforms import (
+    BooleanField,
+    DateField,
+    PasswordField,
+    StringField,
+    SubmitField,
+    TextAreaField,
+    TimeField,
+)
+from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
 
 class RegistrationForm(FlaskForm):
@@ -60,10 +68,7 @@ class CreateFamilyGroupForm(FlaskForm):
 
     name = StringField(
         "Family group name",
-        validators=[
-            DataRequired(),
-            Length(min=2, max=100),
-        ],
+        validators=[DataRequired(), Length(min=2, max=100)],
     )
 
     submit = SubmitField("Create family group")
@@ -74,10 +79,40 @@ class JoinFamilyGroupForm(FlaskForm):
 
     invite_code = StringField(
         "Invitation code",
-        validators=[
-            DataRequired(),
-            Length(min=6, max=20),
-        ],
+        validators=[DataRequired(), Length(min=6, max=20)],
     )
 
     submit = SubmitField("Join family group")
+
+
+class EventForm(FlaskForm):
+    """Form used to create a family event."""
+
+    title = StringField(
+        "Event title",
+        validators=[DataRequired(), Length(min=2, max=150)],
+    )
+
+    event_date = DateField(
+        "Date",
+        validators=[DataRequired()],
+        format="%Y-%m-%d",
+    )
+
+    start_time = TimeField(
+        "Start time",
+        validators=[DataRequired()],
+        format="%H:%M",
+    )
+
+    location = StringField(
+        "Location",
+        validators=[Optional(), Length(max=200)],
+    )
+
+    description = TextAreaField(
+        "Description",
+        validators=[Optional(), Length(max=1000)],
+    )
+
+    submit = SubmitField("Create event")
