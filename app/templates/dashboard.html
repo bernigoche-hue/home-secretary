@@ -3,7 +3,6 @@
 {% block title %}Dashboard | Home Secretary{% endblock %}
 
 {% block content %}
-
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <p class="text-primary fw-semibold mb-1">
@@ -15,23 +14,17 @@
         </h1>
 
         <p class="text-secondary mb-0">
-            Your shared events and household tasks will appear here.
+            Manage your family events and household responsibilities.
         </p>
     </div>
 </div>
 
 <div class="row g-4">
-
     <div class="col-md-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <p class="text-secondary mb-2">
-                    Upcoming events
-                </p>
-
-                <p class="display-6 fw-semibold mb-0">
-                    0
-                </p>
+                <p class="text-secondary mb-2">Upcoming events</p>
+                <p class="display-6 fw-semibold mb-0">0</p>
             </div>
         </div>
     </div>
@@ -39,13 +32,8 @@
     <div class="col-md-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <p class="text-secondary mb-2">
-                    Outstanding tasks
-                </p>
-
-                <p class="display-6 fw-semibold mb-0">
-                    0
-                </p>
+                <p class="text-secondary mb-2">Outstanding tasks</p>
+                <p class="display-6 fw-semibold mb-0">0</p>
             </div>
         </div>
     </div>
@@ -53,34 +41,63 @@
     <div class="col-md-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <p class="text-secondary mb-2">
-                    Family group
-                </p>
+                <p class="text-secondary mb-2">Family group</p>
 
-                <p class="h5 mb-0">
-                    {% if current_user.family_group %}
+                {% if current_user.family_group %}
+                    <p class="h5 mb-1">
                         {{ current_user.family_group.name }}
-                    {% else %}
-                        Not yet created
-                    {% endif %}
-                </p>
+                    </p>
+
+                    <small class="text-secondary">
+                        {{ current_user.family_group.members|length }}
+                        member{% if current_user.family_group.members|length != 1 %}s{% endif %}
+                    </small>
+                {% else %}
+                    <p class="h5 mb-0">Not yet created</p>
+                {% endif %}
             </div>
         </div>
     </div>
-
 </div>
 
 <div class="card border-0 shadow-sm mt-4">
     <div class="card-body p-4">
-        <h2 class="h4">
-            Next step
-        </h2>
+        {% if current_user.family_group %}
+            <h2 class="h4">Your family space is ready</h2>
 
-        <p class="text-secondary mb-0">
-            Create or join a family group to begin sharing events
-            and household tasks.
-        </p>
+            <p class="text-secondary">
+                View household members and share the invitation code
+                with another family member.
+            </p>
+
+            <a
+                class="btn btn-primary"
+                href="{{ url_for('main.family') }}"
+            >
+                View family group
+            </a>
+        {% else %}
+            <h2 class="h4">Set up your family group</h2>
+
+            <p class="text-secondary">
+                Create a household group or join one using an
+                invitation code.
+            </p>
+
+            <a
+                class="btn btn-primary me-2"
+                href="{{ url_for('main.create_family') }}"
+            >
+                Create family group
+            </a>
+
+            <a
+                class="btn btn-outline-primary"
+                href="{{ url_for('main.join_family') }}"
+            >
+                Join family group
+            </a>
+        {% endif %}
     </div>
 </div>
-
 {% endblock %}

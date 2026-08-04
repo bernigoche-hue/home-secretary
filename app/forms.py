@@ -8,19 +8,12 @@ class RegistrationForm(FlaskForm):
 
     full_name = StringField(
         "Full name",
-        validators=[
-            DataRequired(),
-            Length(min=2, max=120),
-        ],
+        validators=[DataRequired(), Length(min=2, max=120)],
     )
 
     email = StringField(
         "Email address",
-        validators=[
-            DataRequired(),
-            Email(),
-            Length(max=120),
-        ],
+        validators=[DataRequired(), Email(), Length(max=120)],
     )
 
     password = PasswordField(
@@ -38,10 +31,7 @@ class RegistrationForm(FlaskForm):
         "Confirm password",
         validators=[
             DataRequired(),
-            EqualTo(
-                "password",
-                message="The passwords must match.",
-            ),
+            EqualTo("password", message="The passwords must match."),
         ],
     )
 
@@ -53,19 +43,41 @@ class LoginForm(FlaskForm):
 
     email = StringField(
         "Email address",
-        validators=[
-            DataRequired(),
-            Email(),
-        ],
+        validators=[DataRequired(), Email()],
     )
 
     password = PasswordField(
         "Password",
-        validators=[
-            DataRequired(),
-        ],
+        validators=[DataRequired()],
     )
 
     remember_me = BooleanField("Remember me")
-
     submit = SubmitField("Log in")
+
+
+class CreateFamilyGroupForm(FlaskForm):
+    """Form used to create a new family group."""
+
+    name = StringField(
+        "Family group name",
+        validators=[
+            DataRequired(),
+            Length(min=2, max=100),
+        ],
+    )
+
+    submit = SubmitField("Create family group")
+
+
+class JoinFamilyGroupForm(FlaskForm):
+    """Form used to join an existing family group."""
+
+    invite_code = StringField(
+        "Invitation code",
+        validators=[
+            DataRequired(),
+            Length(min=6, max=20),
+        ],
+    )
+
+    submit = SubmitField("Join family group")
