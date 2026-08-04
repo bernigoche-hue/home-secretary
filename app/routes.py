@@ -284,7 +284,99 @@ def create_event():
         return redirect(url_for("main.events"))
 
     return render_template("create_event.html", form=form)
+@main.route("/events/<int:event_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_event(event_id: int):
+    """Edit an existing family event."""
+    event = db.session.get(Event, event_id)
 
+    if (
+        event is None
+        or event.family_group_id != current_user.family_group_id
+    ):
+        flash("The requested event could not be found.", "danger")
+        return redirect(url_for("main.events"))
+
+    if event.created_by_id != current_user.id and current_user.role != "admin":
+        flash(
+            "Only the event creator or family administrator can edit it.",
+            "danger",
+        )
+        return redirect(url_for("main.events"))
+
+    form = EventForm(obj=event)
+
+    if form.validate_on_submit():
+        if form.event_date.data < date.today():
+            flash("The event date cannot be in the past.", "danger")
+            return render_template(
+                "edit_event.html",
+                form=form,
+                event=event,
+            )
+
+        event.title = form.title.data.strip()
+        event.event_date = form.event_date.data
+        event.start_time = form.start_time.data
+        event.location = (
+            form.location.data.strip()
+            if form.location.data
+            else None
+        )
+        event.description = (
+            form.description.data.strip()
+            if form.description.data
+            else None
+        )
+
+        db.session.commit()
+
+        flash(
+            f"{event.title} was updated successfully.",
+            "success",
+        )
+        return redirect(url_for("main.events"))
+
+    if not form.is_submitted():
+        form.submit.label.text = "Save changes"
+
+    return render_template(
+        "edit_event.html",
+        form=form,
+        event=event,
+    )
+
+
+@main.route("/events/<int:event_id>/delete", methods=["POST"])
+@login_required
+def delete_event(event_id: int):
+    """Delete an event after validating access rights."""
+    event = db.session.get(Event, event_id)
+
+    if (
+        event is None
+        or event.family_group_id != current_user.family_group_id
+    ):
+        flash("The requested event could not be found.", "danger")
+        return redirect(url_for("main.events"))
+
+    if event.created_by_id != current_user.id and current_user.role != "admin":
+        flash(
+            "Only the event creator or family administrator can delete it.",
+            "danger",
+        )
+        return redirect(url_for("main.events"))
+
+    event_title = event.title
+
+    db.session.delete(event)
+    db.session.commit()
+
+    flash(
+        f"{event_title} was deleted successfully.",
+        "success",
+    )
+    return redirect(url_for("main.events"))
 @main.route("/tasks")
 @login_required
 def tasks():
