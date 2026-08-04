@@ -467,8 +467,113 @@ def create_task():
     return render_template("create_task.html", form=form)
 
 
-@main.route("/tasks/<int:task_id>/status/<string:new_status>", methods=["POST"])
+@main.route("/tasks/<int:task_id>/edit", methods=["GET", "POST"])
 @login_required
+def edit_task(task_id: int):
+    """Edit an existing household task."""
+    task = db.session.get(Task, task_id)
+
+    if (
+        task is None
+        or task.family_group_id != current_user.family_group_id
+    ):
+        flash("The requested task could not be found.", "danger")
+        return redirect(url_for("main.tasks"))
+
+    if task.created_by_id != current_user.id and current_user.role != "admin":
+        flash(
+            "Only the task creator or family administrator can edit it.",
+            "danger",
+        )
+        return redirect(url_for("main.tasks"))
+
+    form = TaskForm(obj=task)
+
+    family_members = (
+        User.query
+        .filter_by(family_group_id=current_user.family_group_id)
+        .order_by(User.full_name.asc())
+        .all()
+    )
+
+    form.assigned_to.choices = [
+        (member.id, member.full_name)
+        for member in family_members
+    ]
+
+    if not form.is_submitted():
+        form.assigned_to.data = task.assigned_to_id
+
+    if form.validate_on_submit():
+        assignee = db.session.get(User, form.assigned_to.data)
+
+        if (
+            assignee is None
+            or assignee.family_group_id != current_user.family_group_id
+        ):
+            flash(
+                "The selected assignee is not a member of your family group.",
+                "danger",
+            )
+            return render_template(
+                "edit_task.html",
+                form=form,
+                task=task,
+            )
+
+        task.title = form.title.data.strip()
+        task.description = (
+            form.description.data.strip()
+            if form.description.data
+            else None
+        )
+        task.due_date = form.due_date.data
+        task.priority = form.priority.data
+        task.assigned_to_id = assignee.id
+
+        db.session.commit()
+
+        flash(
+            f"{task.title} was updated successfully.",
+            "success",
+        )
+        return redirect(url_for("main.tasks"))
+
+    return render_template(
+        "edit_task.html",
+        form=form,
+        task=task,
+    )
+@main.route("/tasks/<int:task_id>/delete", methods=["POST"])
+@login_required
+def delete_task(task_id: int):
+    """Delete a household task after validating access rights."""
+    task = db.session.get(Task, task_id)
+
+    if (
+        task is None
+        or task.family_group_id != current_user.family_group_id
+    ):
+        flash("The requested task could not be found.", "danger")
+        return redirect(url_for("main.tasks"))
+
+    if task.created_by_id != current_user.id and current_user.role != "admin":
+        flash(
+            "Only the task creator or family administrator can delete it.",
+            "danger",
+        )
+        return redirect(url_for("main.tasks"))
+
+    task_title = task.title
+
+    db.session.delete(task)
+    db.session.commit()
+
+    flash(
+        f"{task_title} was deleted successfully.",
+        "success",
+    )
+    return redirect(url_for("main.tasks"))
 def update_task_status(task_id: int, new_status: str):
     """Update a task through its controlled status lifecycle."""
     allowed_statuses = {"pending", "in_progress", "completed"}
@@ -500,6 +605,71 @@ def update_task_status(task_id: int, new_status: str):
         f"{new_status.replace('_', ' ')}.",
         "success",
     )
+    return redirect(url_for("main.tasks"))
+@main.route(
+    "/tasks/<int:task_id>/status/<string:new_status>",
+    methods=["POST"],
+)
+@login_required
+def update_task_status(task_id: int, new_status: str):
+    """Update a household task through its controlled status lifecycle."""
+
+    allowed_statuses = {
+        "pending",
+        "in_progress",
+        "completed",
+    }
+
+    if new_status not in allowed_statuses:
+        flash(
+            "The requested task status is invalid.",
+            "danger",
+        )
+        return redirect(url_for("main.tasks"))
+
+    task = db.session.get(Task, task_id)
+
+    if (
+        task is None
+        or task.family_group_id != current_user.family_group_id
+    ):
+        flash(
+            "The task could not be found.",
+            "danger",
+        )
+        return redirect(url_for("main.tasks"))
+
+    authorised_user_ids = {
+        task.assigned_to_id,
+        task.created_by_id,
+    }
+
+    if (
+        current_user.id not in authorised_user_ids
+        and current_user.role != "admin"
+    ):
+        flash(
+            "Only the assignee, task creator or family administrator "
+            "can update this task.",
+            "danger",
+        )
+        return redirect(url_for("main.tasks"))
+
+    task.status = new_status
+
+    if new_status == "completed":
+        task.completed_at = datetime.utcnow()
+    else:
+        task.completed_at = None
+
+    db.session.commit()
+
+    flash(
+        f"{task.title} is now marked as "
+        f"{new_status.replace('_', ' ')}.",
+        "success",
+    )
+
     return redirect(url_for("main.tasks"))
 @main.route("/logout")
 @login_required
