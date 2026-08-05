@@ -40,6 +40,13 @@ class FamilyGroup(db.Model):
         lazy=True,
     )
 
+    shopping_items = db.relationship(
+        "ShoppingItem",
+        back_populates="family_group",
+        cascade="all, delete-orphan",
+        lazy=True,
+    )
+
     def __repr__(self) -> str:
         return f"<FamilyGroup {self.name}>"
 
@@ -94,6 +101,20 @@ class User(UserMixin, db.Model):
         "Task",
         back_populates="assignee",
         foreign_keys="Task.assigned_to_id",
+        lazy=True,
+    )
+
+    added_shopping_items = db.relationship(
+        "ShoppingItem",
+        back_populates="added_by",
+        foreign_keys="ShoppingItem.added_by_id",
+        lazy=True,
+    )
+
+    purchased_shopping_items = db.relationship(
+        "ShoppingItem",
+        back_populates="purchased_by",
+        foreign_keys="ShoppingItem.purchased_by_id",
         lazy=True,
     )
 
@@ -227,6 +248,92 @@ class Task(db.Model):
     def __repr__(self) -> str:
         return f"<Task {self.title}>"
 
+class ShoppingItem(db.Model):
+    """An item on a family's shared shopping list."""
+
+    __tablename__ = "shopping_items"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+
+    name = db.Column(
+        db.String(150),
+        nullable=False,
+    )
+
+    quantity = db.Column(
+        db.String(50),
+        nullable=False,
+        default="1",
+    )
+
+    category = db.Column(
+        db.String(50),
+        nullable=False,
+        default="groceries",
+    )
+
+    notes = db.Column(
+        db.Text,
+        nullable=True,
+    )
+
+    status = db.Column(
+        db.String(20),
+        nullable=False,
+        default="pending",
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    purchased_at = db.Column(
+        db.DateTime,
+        nullable=True,
+    )
+
+    family_group_id = db.Column(
+        db.Integer,
+        db.ForeignKey("family_groups.id"),
+        nullable=False,
+    )
+
+    added_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False,
+    )
+
+    purchased_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    family_group = db.relationship(
+        "FamilyGroup",
+        back_populates="shopping_items",
+    )
+
+    added_by = db.relationship(
+        "User",
+        back_populates="added_shopping_items",
+        foreign_keys=[added_by_id],
+    )
+
+    purchased_by = db.relationship(
+        "User",
+        back_populates="purchased_shopping_items",
+        foreign_keys=[purchased_by_id],
+    )
+
+    def __repr__(self) -> str:
+        return f"<ShoppingItem {self.name}>"
 
 @login_manager.user_loader
 def load_user(user_id: str):

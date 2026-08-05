@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping List | Home Secretary{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <p class="text-primary fw-semibold mb-1">
+            SHARED SHOPPING LIST
+        </p>
+
+        <h1 class="h2 mb-1">
+            {{ current_user.family_group.name }} shopping
+        </h1>
+
+        <p class="text-secondary mb-0">
+            Add items, prevent duplicate purchases and track who bought what.
+        </p>
+    </div>
+
+    <a
+        class="btn btn-primary"
+        href="{{ url_for('main.create_shopping_item') }}"
+    >
+        Add item
+    </a>
+</div>
+
+{% if shopping_items %}
+    <div class="row g-4">
+        {% for item in shopping_items %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="badge text-bg-secondary">
+                                {{ item.category|title }}
+                            </span>
+
+                            <span class="badge
+                                {% if item.status == 'purchased' %}
+                                    text-bg-success
+                                {% else %}
+                                    text-bg-warning
+                                {% endif %}
+                            ">
+                                {{ item.status|title }}
+                            </span>
+                        </div>
+
+                        <h2 class="h5 mb-2">
+                            {{ item.name }}
+                        </h2>
+
+                        <p class="mb-1">
+                            <strong>Quantity:</strong>
+                            {{ item.quantity }}
+                        </p>
+
+                        {% if item.notes %}
+                            <p class="text-secondary mb-2">
+                                {{ item.notes }}
+                            </p>
+                        {% endif %}
+
+                        <p class="small text-secondary mb-1">
+                            Added by {{ item.added_by.full_name }}
+                        </p>
+
+                        {% if item.status == "purchased" and item.purchased_by %}
+                            <p class="small text-success mb-3">
+                                Purchased by {{ item.purchased_by.full_name }}
+                                {% if item.purchased_at %}
+                                    on {{ item.purchased_at.strftime("%d %B %Y") }}
+                                {% endif %}
+                            </p>
+                        {% endif %}
+
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+
+                            {% if item.status == "pending" %}
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'main.purchase_shopping_item',
+                                        item_id=item.id
+                                    ) }}"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-success"
+                                    >
+                                        Mark purchased
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'main.restore_shopping_item',
+                                        item_id=item.id
+                                    ) }}"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-outline-primary"
+                                    >
+                                        Return to list
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            {% if
+                                item.added_by_id == current_user.id
+                                or current_user.role == "admin"
+                            %}
+                                <a
+                                    class="btn btn-sm btn-outline-secondary"
+                                    href="{{ url_for(
+                                        'main.edit_shopping_item',
+                                        item_id=item.id
+                                    ) }}"
+                                >
+                                    Edit
+                                </a>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'main.delete_shopping_item',
+                                        item_id=item.id
+                                    ) }}"
+                                    onsubmit="return confirm(
+                                        'Are you sure you want to delete this item?'
+                                    );"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-outline-danger"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-5 text-center">
+            <h2 class="h4">The shopping list is empty</h2>
+
+            <p class="text-secondary">
+                Add the first item needed by your family.
+            </p>
+
+            <a
+                class="btn btn-primary"
+                href="{{ url_for('main.create_shopping_item') }}"
+            >
+                Add first item
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

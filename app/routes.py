@@ -7,6 +7,13 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from app.extensions import db
 from app.forms import (
+    EventForm,
+    LoginForm,
+    RegistrationForm,
+    TaskForm,
+    ShoppingItemForm,
+)
+from app.forms import (
     CreateFamilyGroupForm,
     EventForm,
     JoinFamilyGroupForm,
@@ -14,7 +21,7 @@ from app.forms import (
     RegistrationForm,
     TaskForm,
 )
-from app.models import Event, FamilyGroup, Task, User
+from app.models import Event, FamilyGroup, ShoppingItem, Task, User
 
 
 main = Blueprint("main", __name__)
@@ -671,6 +678,231 @@ def update_task_status(task_id: int, new_status: str):
     )
 
     return redirect(url_for("main.tasks"))
+
+@main.route("/shopping")
+@login_required
+def shopping():
+    """Display the shared shopping list for the user's family."""
+    if current_user.family_group_id is None:
+        flash(
+            "Create or join a family group before using the shopping list.",
+            "warning",
+        )
+        return redirect(url_for("main.dashboard"))
+
+    shopping_items = (
+        ShoppingItem.query
+        .filter_by(family_group_id=current_user.family_group_id)
+        .order_by(
+            ShoppingItem.status.asc(),
+            ShoppingItem.created_at.desc(),
+        )
+        .all()
+    )
+
+    return render_template(
+        "shopping.html",
+        shopping_items=shopping_items,
+    )
+
+
+@main.route("/shopping/create", methods=["GET", "POST"])
+@login_required
+def create_shopping_item():
+    """Add an item to the shared family shopping list."""
+    if current_user.family_group_id is None:
+        flash(
+            "Create or join a family group before adding shopping items.",
+            "warning",
+        )
+        return redirect(url_for("main.dashboard"))
+
+    form = ShoppingItemForm()
+
+    if form.validate_on_submit():
+        item = ShoppingItem(
+            name=form.name.data.strip(),
+            quantity=form.quantity.data.strip(),
+            category=form.category.data,
+            notes=(
+                form.notes.data.strip()
+                if form.notes.data
+                else None
+            ),
+            status="pending",
+            family_group_id=current_user.family_group_id,
+            added_by_id=current_user.id,
+        )
+
+        db.session.add(item)
+        db.session.commit()
+
+        flash(
+            f"{item.name} was added to the shared shopping list.",
+            "success",
+        )
+        return redirect(url_for("main.shopping"))
+
+    return render_template(
+        "create_shopping_item.html",
+        form=form,
+    )
+
+
+@main.route(
+    "/shopping/<int:item_id>/edit",
+    methods=["GET", "POST"],
+)
+@login_required
+def edit_shopping_item(item_id: int):
+    """Edit an existing shopping-list item."""
+    item = db.session.get(ShoppingItem, item_id)
+
+    if (
+        item is None
+        or item.family_group_id != current_user.family_group_id
+    ):
+        flash(
+            "The requested shopping item could not be found.",
+            "danger",
+        )
+        return redirect(url_for("main.shopping"))
+
+    if item.added_by_id != current_user.id and current_user.role != "admin":
+        flash(
+            "Only the item creator or family administrator can edit it.",
+            "danger",
+        )
+        return redirect(url_for("main.shopping"))
+
+    form = ShoppingItemForm(obj=item)
+
+    if form.validate_on_submit():
+        item.name = form.name.data.strip()
+        item.quantity = form.quantity.data.strip()
+        item.category = form.category.data
+        item.notes = (
+            form.notes.data.strip()
+            if form.notes.data
+            else None
+        )
+
+        db.session.commit()
+
+        flash(
+            f"{item.name} was updated successfully.",
+            "success",
+        )
+        return redirect(url_for("main.shopping"))
+
+    return render_template(
+        "edit_shopping_item.html",
+        form=form,
+        item=item,
+    )
+
+
+@main.route(
+    "/shopping/<int:item_id>/purchase",
+    methods=["POST"],
+)
+@login_required
+def purchase_shopping_item(item_id: int):
+    """Mark a shared shopping item as purchased."""
+    item = db.session.get(ShoppingItem, item_id)
+
+    if (
+        item is None
+        or item.family_group_id != current_user.family_group_id
+    ):
+        flash(
+            "The requested shopping item could not be found.",
+            "danger",
+        )
+        return redirect(url_for("main.shopping"))
+
+    item.status = "purchased"
+    item.purchased_by_id = current_user.id
+    item.purchased_at = datetime.utcnow()
+
+    db.session.commit()
+
+    flash(
+        f"{item.name} was marked as purchased by "
+        f"{current_user.full_name}.",
+        "success",
+    )
+    return redirect(url_for("main.shopping"))
+
+
+@main.route(
+    "/shopping/<int:item_id>/restore",
+    methods=["POST"],
+)
+@login_required
+def restore_shopping_item(item_id: int):
+    """Return a purchased shopping item to pending status."""
+    item = db.session.get(ShoppingItem, item_id)
+
+    if (
+        item is None
+        or item.family_group_id != current_user.family_group_id
+    ):
+        flash(
+            "The requested shopping item could not be found.",
+            "danger",
+        )
+        return redirect(url_for("main.shopping"))
+
+    item.status = "pending"
+    item.purchased_by_id = None
+    item.purchased_at = None
+
+    db.session.commit()
+
+    flash(
+        f"{item.name} was returned to the shopping list.",
+        "success",
+    )
+    return redirect(url_for("main.shopping"))
+
+
+@main.route(
+    "/shopping/<int:item_id>/delete",
+    methods=["POST"],
+)
+@login_required
+def delete_shopping_item(item_id: int):
+    """Delete a shopping-list item."""
+    item = db.session.get(ShoppingItem, item_id)
+
+    if (
+        item is None
+        or item.family_group_id != current_user.family_group_id
+    ):
+        flash(
+            "The requested shopping item could not be found.",
+            "danger",
+        )
+        return redirect(url_for("main.shopping"))
+
+    if item.added_by_id != current_user.id and current_user.role != "admin":
+        flash(
+            "Only the item creator or family administrator can delete it.",
+            "danger",
+        )
+        return redirect(url_for("main.shopping"))
+
+    item_name = item.name
+
+    db.session.delete(item)
+    db.session.commit()
+
+    flash(
+        f"{item_name} was deleted successfully.",
+        "success",
+    )
+    return redirect(url_for("main.shopping"))
 @main.route("/logout")
 @login_required
 def logout():
