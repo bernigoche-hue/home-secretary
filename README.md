@@ -92,7 +92,7 @@ home-secretary/
 Clone the repository:
 
 ```bash
-git clone https://github.com/bernigoche-hue/home-secretary.git>
+git clone https://github.com/bernigoche-hue/home-secretary.git
 ```
 
 Move into the project folder:
